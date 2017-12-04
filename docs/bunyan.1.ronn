@@ -103,7 +103,7 @@ Output options:
     Force no coloring (e.g. terminal doesn't support it)
 
   * `-o FORMAT`, `--output FORMAT`:
-    Specify an output format. One of `long` (the default), `short`, `json`,
+    Specify an output format. One of `long` (the default), `short`, `oneline`, `json`,
     `json-N`, `bunyan` (the native bunyan 0-indent JSON output) or `inspect`.
 
   * `-j`:
@@ -135,8 +135,8 @@ scripts, uppercase symbols like "DEBUG" are defined for convenience.
     long (default)      The default output. Long form. Colored and "pretty".
                         'req' and 'res' and 'err' fields are rendered specially
                         as an HTTP request, HTTP response and exception
-                        stack trace, respectively. For backward compat, the
-                        name "paul" also works for this.
+                        stack trace, respectively.
+    oneline             Between long and short.
     short               Like the default output, but more concise. Some
                         typically redundant fields are ellided.
     json                JSON output, 2-space indentation.

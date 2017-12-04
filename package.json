@@ -7,17 +7,23 @@
   "bin": {
     "bunyan": "./bin/bunyan"
   },
-
   "repository": {
     "type": "git",
     "url": "git://github.com/trentm/node-bunyan.git"
   },
-  "engines": ["node >=0.10.0"],
-  "keywords": ["log", "logging", "log4j", "json", "bunyan"],
+  "engines": [
+    "node >=0.10.0"
+  ],
+  "keywords": [
+    "log",
+    "logging",
+    "log4j",
+    "json",
+    "bunyan"
+  ],
   "license": "MIT",
-
   "dependencies": {
-    "exeunt": "1.1.0"
+    "exeunt": "^1.1.0"
   },
   "// dtrace-provider": "required for dtrace features",
   "// mv": "required for RotatingFileStream",
@@ -35,7 +41,6 @@
     "verror": "1.3.3",
     "vasync": "1.4.3"
   },
-
   "scripts": {
     "test": "make test"
   }

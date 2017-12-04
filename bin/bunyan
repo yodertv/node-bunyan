@@ -54,9 +54,10 @@ var OM_INSPECT = 3;
 var OM_SIMPLE = 4;
 var OM_SHORT = 5;
 var OM_BUNYAN = 6;
+var OM_ONE_LINE = 7;
 var OM_FROM_NAME = {
     'long': OM_LONG,
-    'paul': OM_LONG,  /* backward compat */
+    'oneline': OM_ONE_LINE,
     'json': OM_JSON,
     'inspect': OM_INSPECT,
     'simple': OM_SIMPLE,
@@ -249,6 +250,7 @@ function printHelp() {
     p('  --no-color    Force no coloring (e.g. terminal doesn\'t support it)');
     p('  -o, --output MODE');
     p('                Specify an output mode/format. One of');
+    p('                  oneline: between simple and short');
     p('                  long: (the default) pretty');
     p('                  json: JSON output, 2-space indent');
     p('                  json-N: JSON output, N-space indent, e.g. "json-4"');
@@ -767,8 +769,13 @@ function handleLogLine(file, line, opts, stylize) {
  */
 function emitRecord(rec, line, opts, stylize) {
     var short = false;
+    var oneline = false;
 
     switch (opts.outputMode) {
+    case OM_ONE_LINE:
+        oneline = true;
+        /* jsl:fall-thru */
+   
     case OM_SHORT:
         short = true;
         /* jsl:fall-thru */
@@ -860,6 +867,7 @@ function emitRecord(rec, line, opts, stylize) {
 
         var extras = [];
         var details = [];
+        var oneLineDetails = [];
 
         if (rec.req_id) {
             extras.push('req_id=' + rec.req_id);
@@ -893,6 +901,7 @@ function emitRecord(rec, line, opts, stylize) {
                 req.httpVersion || '1.1',
                 headers
             );
+            var sOneLine = format('%s %s', req.method, req.url);
             delete req.url;
             delete req.method;
             delete req.httpVersion;
@@ -909,6 +918,7 @@ function emitRecord(rec, line, opts, stylize) {
             }
             delete req.trailers;
             details.push(indent(s));
+            oneLineDetails.push(sOneLine);
             // E.g. for extra 'foo' field on 'req', add 'req.foo' at
             // top-level. This *does* have the potential to stomp on a
             // literal 'req.foo' key.
@@ -955,6 +965,16 @@ function emitRecord(rec, line, opts, stylize) {
 
         function _res(res) {
             var s = '';
+            var sOneLine = '';
+            if (res.statusCode !== undefined) {
+                sOneLine += format('%s %s %dms', res.statusCode, http.STATUS_CODES[res.statusCode],
+                    Math.round(rec.duration * 10000000) / 10000000);
+                delete rec.duration;
+                oneLineDetails.push(sOneLine);
+                s += format('HTTP/1.1 %s %s\n', res.statusCode,
+                    http.STATUS_CODES[res.statusCode]);
+                delete res.statusCode;
+            }
 
             /*
              * Handle `res.header` or `res.headers` as either a string or
@@ -1062,12 +1082,14 @@ function emitRecord(rec, line, opts, stylize) {
             }
             if (value.indexOf('\n') !== -1 || value.length > 50) {
                 details.push(indent(key + ': ' + value));
+                oneLineDetails.push(key + ': ' + value);
             } else if (!stringified && (value.indexOf(' ') != -1 ||
                 value.length === 0))
             {
                 extras.push(key + '=' + JSON.stringify(value));
             } else {
                 extras.push(key + '=' + value);
+                oneLineDetails.push(key + '=' + value);
             }
         }
 
@@ -1075,8 +1097,10 @@ function emitRecord(rec, line, opts, stylize) {
             (extras.length ? ' (' + extras.join(', ') + ')' : ''), 'none');
         details = stylize(
             (details.length ? details.join('\n    --\n') + '\n' : ''), 'none');
+        oneLineDetails = oneLineDetails.length ? ' ' + oneLineDetails.join(', ') : '';
+
         if (!short)
-            emit(format('%s %s: %s on %s%s:%s%s\n%s',
+            emit(format('%s %s: %s on %s%s:%s%s\n%s',  // long
                 time,
                 level,
                 nameStr,
@@ -1085,8 +1109,15 @@ function emitRecord(rec, line, opts, stylize) {
                 onelineMsg,
                 extras,
                 details));
-        else
-            emit(format('%s %s %s:%s%s\n%s',
+        else if (oneline)
+            emit(format('%s %s %s:%s%s\n',            // oneline, no extras, only one line details
+                time,
+                level,
+                nameStr,
+                onelineMsg,
+                oneLineDetails));
+        else 
+            emit(format('%s %s %s:%s%s\n%s',            // short
                 time,
                 level,
                 nameStr,
